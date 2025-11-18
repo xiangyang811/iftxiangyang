@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兑换码管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #9c27b0, #f44336);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #9c27b0;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #9c27b0, #f44336);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #9c27b0;
+        }
+        
+        .code-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .code-item {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-family: monospace;
+            font-weight: 600;
+            border: 1px solid #e1e5e9;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            border-top: 4px solid #9c27b0;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #9c27b0;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c33;
+        }
+        
+        .success {
+            background: #efe;
+            color: #363;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #363;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-key"></i> 兑换码管理系统</h1>
+            <p>生成和管理心理测评测试兑换码</p>
+        </div>
+        
+        <div class="content">
+            <div class="stats" id="stats-container">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-codes">-</div>
+                    <div class="stat-label">总兑换码</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="used-codes">-</div>
+                    <div class="stat-label">已使用</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="active-codes">-</div>
+                    <div class="stat-label">未使用</div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="admin-password">管理员密码</label>
+                <input type="password" id="admin-password" placeholder="输入管理员密码">
+            </div>
+            
+            <div class="form-group">
+                <label for="code-count">生成数量</label>
+                <input type="number" id="code-count" value="10" min="1" max="100">
+            </div>
+            
+            <div class="form-group">
+                <label for="code-prefix">兑换码前缀</label>
+                <input type="text" id="code-prefix" value="PSYCH" maxlength="10">
+            </div>
+            
+            <div class="form-group">
+                <label for="expires-days">有效期（天）</label>
+                <input type="number" id="expires-days" value="30" min="1" max="365">
+            </div>
+            
+            <button class="btn" onclick="generateCodes()">
+                <i class="fas fa-plus-circle"></i> 生成兑换码
+            </button>
+            
+            <div id="message-container"></div>
+            <div id="result-container"></div>
+        </div>
+    </div>
+
+    <script>
+        async function generateCodes() {
+            const password = document.getElementById('admin-password').value;
+            const count = document.getElementById('code-count').value;
+            const prefix = document.getElementById('code-prefix').value;
+            const expiresDays = document.getElementById('expires-days').value;
+            
+            const messageContainer = document.getElementById('message-container');
+            const resultContainer = document.getElementById('result-container');
+            
+            if (!password) {
+                showMessage('请输入管理员密码', 'error');
+                return;
+            }
+            
+            // 显示加载中
+            resultContainer.innerHTML = '<div class="loading">生成中...</div>';
+            
+            try {
+                const response = await fetch('/.netlify/functions/generate-codes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        password: password,
+                        count: parseInt(count),
+                        prefix: prefix,
+                        expires_in_days: parseInt(expiresDays)
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(`成功生成 ${result.count} 个兑换码，有效期 ${result.expires_in_days} 天`, 'success');
+                    
+                    let html = `
+                        <div class="result">
+                            <h3>生成的兑换码：</h3>
+                            <div class="code-list">
+                    `;
+                    
+                    result.codes.forEach(code => {
+                        html += `<div class="code-item">${code}</div>`;
+                    });
+                    
+                    html += `
+                            </div>
+                            <div style="margin-top: 15px;">
+                                <button class="btn" onclick="copyAllCodes()" style="background: #28a745;">
+                                    <i class="fas fa-copy"></i> 复制所有兑换码
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    resultContainer.innerHTML = html;
+                    updateStats();
+                } else {
+                    showMessage('生成失败: ' + (result.error || '未知错误'), 'error');
+                    resultContainer.innerHTML = '';
+                }
+            } catch (error) {
+                showMessage('网络错误: ' + error.message, 'error');
+                resultContainer.innerHTML = '';
+            }
+        }
+        
+        function copyAllCodes() {
+            const codeItems = document.querySelectorAll('.code-item');
+            const codes = Array.from(codeItems).map(item => item.textContent).join('\n');
+            
+            navigator.clipboard.writeText(codes).then(() => {
+                showMessage('所有兑换码已复制到剪贴板', 'success');
+            }).catch(err => {
+                showMessage('复制失败: ' + err, 'error');
+            });
+        }
+        
+        function showMessage(message, type) {
+            const messageContainer = document.getElementById('message-container');
+            messageContainer.innerHTML = `<div class="${type}">${message}</div>`;
+            
+            // 3秒后自动消失
+            setTimeout(() => {
+                messageContainer.innerHTML = '';
+            }, 3000);
+        }
+        
+        async function updateStats() {
+            // 这里可以添加获取统计信息的函数
+            // 暂时用模拟数据
+            document.getElementById('total-codes').textContent = '50';
+            document.getElementById('used-codes').textContent = '15';
+            document.getElementById('active-codes').textContent = '35';
+        }
+        
+        // 页面加载时更新统计信息
+        document.addEventListener('DOMContentLoaded', updateStats);
+    </script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+</body>
+</html>
